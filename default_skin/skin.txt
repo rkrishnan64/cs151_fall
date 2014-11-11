@@ -13,7 +13,7 @@
 11.png
 12.png
 win.jpg
-loss.jpg
+loss.png
 play.jpg
 playPressed.jpg
 background.jpg
