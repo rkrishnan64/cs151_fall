@@ -11,12 +11,6 @@ public class SlotMachineRunner {
 	private static SlotMachineController controller;
 
 	public static void main(String[] args) {
-		JFrame slotMachineWindow = new JFrame("Slot Machine");
-		slotMachineWindow.setSize(1000, 662);
-		slotMachineWindow.setResizable(false);
-		slotMachineWindow.setLayout(new BoxLayout(slotMachineWindow.getContentPane(), BoxLayout.Y_AXIS));
-		slotMachineWindow.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		
 		// Model
 		SlotMachineModel model = new SlotMachineModel();
 		
@@ -27,11 +21,6 @@ public class SlotMachineRunner {
 		// Controller
 		controller = new SlotMachineController(view);
 		controller.addActionListener(model);
-		
-		// Add to window
-		slotMachineWindow.add(view, BorderLayout.CENTER);
-		
-		slotMachineWindow.setVisible(true);
 	}
 
 }
