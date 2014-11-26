@@ -1,4 +1,7 @@
+package Assignment_4;
+
 import java.awt.Image;
+import java.awt.Point;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -9,31 +12,61 @@ import javax.imageio.ImageIO;
 
 
 public class SlotSkin {
+	int width;
+	int height;
 	int numWheels;
 	int numSymbols;
+	int symbolWidth;
+	int symbolHeight;
 	Image win;
 	Image loss;
 	Image play;
 	Image playPressed;
 	Image background;
+	Point labelLocation;
+	Point buttonLocation;
 	ArrayList<Image> symbols;
+	ArrayList<Point> wheelLocations;
 	String defaultSkin = "default_skin";
 	
 	SlotSkin() {
 		loadSkin(defaultSkin);
 	}
 	
-	private boolean loadSkin(String skinName) {
+	public boolean loadSkin(String skinPath) {
 		// Parse text file to get paths to each file and number of wheels and number of symbols
 		try {
 			// Add trailing slash to path and get scanner object
-			String skinPath = skinName;
 			if(skinPath.indexOf('/') != skinPath.length()) skinPath += '/';
 			Scanner skinFile = new Scanner(new File(skinPath+"skin.txt"));
 			
+			// Get main dimensions of program
+			int width = Integer.parseInt(skinFile.nextLine());
+			int height = Integer.parseInt(skinFile.nextLine());
+			
+			// Get location of main JLabel
+			int labelX = Integer.parseInt(skinFile.nextLine());
+			int labelY = Integer.parseInt(skinFile.nextLine());
+			Point labelLocation = new Point(labelX, labelY);
+			
+			// Get location of play button
+			int buttonX = Integer.parseInt(skinFile.nextLine());
+			int buttonY = Integer.parseInt(skinFile.nextLine());
+			Point buttonLocation = new Point(buttonX, buttonY);
+			
 			// Get number of wheels and symbols
 			int wheels = Integer.parseInt(skinFile.nextLine());
+			ArrayList<Point> wheelLocations = new ArrayList<Point>();
+			for(int i = 0; i < wheels; i++) {
+				int x = Integer.parseInt(skinFile.nextLine());
+				int y = Integer.parseInt(skinFile.nextLine());
+				wheelLocations.add(new Point(x, y));
+			}
+			
+			// Get number of symbols and dimensions
 			int symbolLength = Integer.parseInt(skinFile.nextLine());
+			int symbolWidth = Integer.parseInt(skinFile.nextLine());
+			int symbolHeight = Integer.parseInt(skinFile.nextLine());
 			
 			// Get symbol paths
 			ArrayList<String> symbolPaths = new ArrayList<String>();
@@ -62,15 +95,22 @@ public class SlotSkin {
 			}
 			
 			// Assign images and values to skin
+			this.width = width;
+			this.height = height;
+			this.labelLocation = labelLocation;
+			this.buttonLocation = buttonLocation;
 			numWheels = wheels;
 			numSymbols = symbolLength;
+			this.labelLocation = labelLocation;
+			this.symbolWidth = symbolWidth;
+			this.symbolHeight = symbolHeight;
 			win = winImage;
 			loss = lossImage;
 			play = playImage;
 			playPressed = playPressedImage;
 			background = backgroundImage;
 			symbols = (ArrayList<Image>) symbolImages.clone();
-			
+			this.wheelLocations = (ArrayList<Point>) wheelLocations.clone();
 		} catch (FileNotFoundException e1) {
 			System.out.println("Error loading skin");
 			e1.printStackTrace();
@@ -81,7 +121,7 @@ public class SlotSkin {
 			return false;
 		}
 		
-		System.out.println("Skin "+skinName+" loaded successfully.");
+		System.out.println("Skin loaded successfully.");
 		return true;
 	}
 
@@ -113,7 +153,35 @@ public class SlotSkin {
 		return background;
 	}
 
+	public int getSymbolWidth() {
+		return symbolWidth;
+	}
+
+	public int getSymbolHeight() {
+		return symbolHeight;
+	}
+
+	public int getWidth() {
+		return width;
+	}
+
+	public int getHeight() {
+		return height;
+	}
+	
+	public Point getLabelLocation() {
+		return labelLocation;
+	}
+	
+	public Point getButtonLocation() {
+		return buttonLocation;
+	}
+
 	public Image getSymbol(int index) {
 		return symbols.get(index);
+	}
+
+	public Point wheelLocation(int i) {
+		return wheelLocations.get(i);
 	}
 }
