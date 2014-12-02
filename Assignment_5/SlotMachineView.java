@@ -16,6 +16,7 @@ import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JLayeredPane;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
@@ -26,7 +27,7 @@ import javax.swing.SwingConstants;
  * View for Slot Machine
  *
  */
-public class SlotMachineView extends JPanel implements ActionListener {
+public class SlotMachineView extends JLayeredPane implements ActionListener {
 	public SlotSkin skin;
 	public CustomButton playButton;
 	private ArrayList<JButton> stopButtons;
@@ -34,11 +35,15 @@ public class SlotMachineView extends JPanel implements ActionListener {
 	private int[] symbols;
 	public JMenuItem jmi;
 	public JPanel menu;
-	boolean showSymbols;
+	private boolean showSymbols, winning;
 	private JFrame slotMachineWindow;
+	private ImageOverlay imageOverlay;
+	private ImageOverlayThread imageOverlayThread;
+	private SlotMachineView thisView;
 	
 	public SlotMachineView() {
 		// Will init with init event
+		thisView = this;
 		stopButtons = new ArrayList<JButton>();
 	}
 
@@ -95,6 +100,15 @@ public class SlotMachineView extends JPanel implements ActionListener {
 				this.add(thisJButton);
 				stopButtons.add(thisJButton);
 			}
+			
+			// Setup overlay
+			imageOverlay = new ImageOverlay(skin.getImage("win"), skin.getImage("loss"));
+			imageOverlay.setSize(new Dimension(skin.getInt("width"), skin.getInt("height")));
+			imageOverlay.setLocation(new Point(0, 0));
+			this.add(imageOverlay, 2, 0);
+			imageOverlayThread = new ImageOverlayThread();
+			
+			
 			// Setup window
 			slotMachineWindow = new JFrame("Slot Machine");
 			slotMachineWindow.setSize(skin.getInt("width"), skin.getInt("height") + 40); // +40 is to offset menu bar
@@ -121,6 +135,10 @@ public class SlotMachineView extends JPanel implements ActionListener {
 				this.add(thisJButton);
 				stopButtons.add(thisJButton);
 			}
+			imageOverlay = new ImageOverlay(skin.getImage("win"), skin.getImage("loss"));
+			imageOverlay.setSize(new Dimension(skin.getInt("width"), skin.getInt("height")));
+			imageOverlay.setLocation(new Point(0, 0));
+			this.add(imageOverlay, 2, 0);
 			slotMachineWindow.setVisible(false);
 			slotMachineWindow.setResizable(true);
 			slotMachineWindow.setSize(skin.getInt("width"), skin.getInt("height") + 40);
@@ -144,8 +162,10 @@ public class SlotMachineView extends JPanel implements ActionListener {
 //			System.out.println(model.getTokens() + " // " + model.getWinnings());
 			
 			// Update winnings label
+			winning = false;
 			if(model.getWinnings() > 0){
 				tokens.setText("Winnings: " + model.getWinnings());
+				winning = true;
 			}
 			
 			// Update tokens label
@@ -161,13 +181,19 @@ public class SlotMachineView extends JPanel implements ActionListener {
 				symbols = new int[0]; // Don't draw symbols
 				return;
 			}
+			
+			// Show overlay
+			new Thread(imageOverlayThread).start();
 		}
 		
 		// Repaint
 		this.repaint();
 	}
 	
-	// Define custom button
+	/**
+	 * Custom Button (with normal and pressed state)
+	 *
+	 */
 	public static class CustomButton extends JComponent implements MouseListener {
 		private ArrayList<ActionListener> listeners;
 		public boolean isPressed;
@@ -224,6 +250,59 @@ public class SlotMachineView extends JPanel implements ActionListener {
 		
 		public void addActionListener(ActionListener a) {
 			listeners.add(a);
+		}
+	}
+	/**
+	 * Image Overlay
+	 *
+	 */
+	class ImageOverlay extends JComponent {
+		public boolean show;
+		private Image win, loss;
+		
+		public ImageOverlay(Image win, Image loss) {
+			this.win = win;
+			this.loss = loss;
+			this.show = false;
+		}
+		
+		@Override
+		public void paintComponent(Graphics g) {
+			if(show) {
+				g.setColor(new Color(0, 0, 0, 80));
+				g.fillRect(0, 0, skin.getInt("width"), skin.getInt("height"));
+				if(winning) {
+					g.drawImage(win, (skin.getInt("width") - win.getWidth(null))/2, (skin.getInt("height") - win.getHeight(null))/2, null);
+				}else{
+					g.drawImage(loss, (skin.getInt("width") - loss.getWidth(null))/2, (skin.getInt("height") - loss.getHeight(null))/2, null);
+				}
+			}
+		}
+	}
+	
+	/**
+	 * Image Overlay Thread
+	 *
+	 */
+	class ImageOverlayThread extends Thread {
+		@Override
+		public void run() {
+			try {
+				// Show overlay
+				imageOverlay.show = true;
+				imageOverlay.revalidate();
+				imageOverlay.repaint();
+				
+				// Wait
+				this.sleep(650);
+				
+				// Hide overlay
+				imageOverlay.show = false;
+				imageOverlay.revalidate();
+				imageOverlay.repaint();
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
 		}
 	}
 	

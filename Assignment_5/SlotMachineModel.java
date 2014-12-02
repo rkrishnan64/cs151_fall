@@ -27,7 +27,7 @@ public class SlotMachineModel implements ActionListener {
 	}
 	
 	/**
-	 * 
+	 * Add ActionListener
 	 * @param a The ActionListener to add
 	 */
 	public void addActionListener(ActionListener a) {

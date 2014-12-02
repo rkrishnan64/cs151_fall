@@ -63,6 +63,10 @@ public class SlotMachineController extends JPanel {
 		});
 	}
 	
+	/**
+	 * ActionListener for Stop Buttons
+	 *
+	 */
 	public class stopButtonAction implements ActionListener {
 		private Thread targetThread;
 		
@@ -77,7 +81,7 @@ public class SlotMachineController extends JPanel {
 	}
 	
 	/**
-	 * Add an actionlistener
+	 * Add an ActionListener
 	 * @param a The ActionListener to add
 	 */
 	public void addActionListener(ActionListener a) {
