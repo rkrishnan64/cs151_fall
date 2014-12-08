@@ -1,6 +1,9 @@
 package Assignment_5;
 
-
+/**
+ * Runner for Slot Machine
+ *
+ */
 public class SlotMachineRunner {
 	private static SlotMachineView view;
 	private static SlotMachineController controller;

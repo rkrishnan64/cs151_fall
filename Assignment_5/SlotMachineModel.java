@@ -3,7 +3,7 @@ package Assignment_5;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
-import java.util.Random;
+import java.util.Arrays;
 
 /**
  * Model for Slot Machine
@@ -12,8 +12,6 @@ import java.util.Random;
 public class SlotMachineModel implements ActionListener {
 	private ArrayList<ActionListener> listeners;
 	private int tokens, winnings, numSymbols;
-	private int[] symbols;
-	private boolean gameOver;
 	
 	/**
 	 * Constructor
@@ -23,7 +21,6 @@ public class SlotMachineModel implements ActionListener {
 		
 		tokens = 10;
 		winnings = 0;
-		gameOver = false;
 	}
 	
 	/**
@@ -34,29 +31,21 @@ public class SlotMachineModel implements ActionListener {
 		listeners.add(a);
 	}
 	
+	/**
+	 * Perform action from listener
+	 */
 	@Override
 	public void actionPerformed(ActionEvent e) {
 		if (e.getActionCommand().equals("update")) {
-			if(gameOver) {
-				// Reset
-				tokens = 9;
-				winnings = 0;
-				gameOver = false;
-				
-				// Send update event
-				ActionEvent newEvent = new ActionEvent(this, ActionEvent.ACTION_FIRST, "update");
-				for( ActionListener a : listeners ) a.actionPerformed(newEvent);
-				return;
-			}
-			
-			//cost
+			// Cost of playing game
 			tokens--;
 			
-			// Assigning new numbers
-			Random rand=new Random();
-			for(int i=0;i<symbols.length;i++){
-				symbols[i]=rand.nextInt(250003)%numSymbols;
-			}
+			// Send update event
+			ActionEvent newEvent = new ActionEvent(this, ActionEvent.ACTION_FIRST, "update");
+			for( ActionListener a : listeners ) a.actionPerformed(newEvent);
+		}else if (e.getActionCommand().equals("results")) {
+			// Get current symbols
+			int[] symbols = (int[]) e.getSource();
 			
 			// Checking win condition
 			int done[][]=new int[numSymbols][2];
@@ -69,7 +58,7 @@ public class SlotMachineModel implements ActionListener {
 				{
 					if (i==symbols[j]){
                         if(done[i][0]==-1)
-                            done[i][0]=j;
+                            done[i][0]=i;
                         done[i][1]++;
                     }
 				}
@@ -84,48 +73,58 @@ public class SlotMachineModel implements ActionListener {
 			
 			// Check for game over
 			if(tokens <= 0) {
-				gameOver = true;
+				// Reset data for new game
+				tokens = 10;
+				winnings = 0;
+				
+				// Send results and gameOver events
+				ActionEvent newEvent = new ActionEvent(this, ActionEvent.ACTION_FIRST, "results");
+				for( ActionListener a : listeners ) a.actionPerformed(newEvent);
+				ActionEvent newEvent2 = new ActionEvent(this, ActionEvent.ACTION_FIRST, "gameOver");
+				for( ActionListener a : listeners ) a.actionPerformed(newEvent2);
+				return;
 			}
 			
-			// Send update event
-			ActionEvent newEvent = new ActionEvent(this, ActionEvent.ACTION_FIRST, "update");
+			// Send results event
+			ActionEvent newEvent = new ActionEvent(this, ActionEvent.ACTION_FIRST, "results");
 			for( ActionListener a : listeners ) a.actionPerformed(newEvent);
 		} else if (e.getActionCommand().equals("init")) {
 			// Get symbol info from view
 			SlotMachineView view = (SlotMachineView) e.getSource();
-			symbols = new int[view.skin.getInt("numWheels")];
 			numSymbols = view.skin.getInt("numSymbols");
 			
+			// Send init event
 			ActionEvent newEvent = new ActionEvent(this, ActionEvent.ACTION_FIRST, "init");
 			for( ActionListener a : listeners ) a.actionPerformed(newEvent);
 		} else if (e.getActionCommand().equals("loadSkin")) {
 			// Get Symbol info from view
 			SlotMachineView view = (SlotMachineView) e.getSource();
-			symbols = new int[view.skin.getInt("numWheels")];
 			numSymbols = view.skin.getInt("numSymbols");
-			gameOver = true;
 			
-			// Send loadskin and update events
+			// Reset data for new game
+			tokens = 10;
+			winnings = 0;
+			
+			// Send loadskin and gameOver events
 			for( ActionListener a : listeners ) a.actionPerformed(e);
-			ActionEvent newEvent = new ActionEvent(this, ActionEvent.ACTION_FIRST, "update");
+			ActionEvent newEvent = new ActionEvent(this, ActionEvent.ACTION_FIRST, "gameOver");
 			for( ActionListener a : listeners ) a.actionPerformed(newEvent);
 		}
 	}
-
+	
+	/**
+	 * Get number of tokens
+	 * @return The number of tokens
+	 */
 	public int getTokens() {
 		return tokens;
 	}
-
+	
+	/**
+	 * Get number of tokens won
+	 * @return The number of tokens won.
+	 */
 	public int getWinnings() {
 		return winnings;
 	}
-
-	public boolean isGameOver() {
-		return gameOver;
-	}
-
-	public int[] getSymbols() {
-		return symbols;
-	}
-	
 }

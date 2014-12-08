@@ -23,6 +23,8 @@ import javax.swing.JMenuItem;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
 
+import Assignment_5.SlotMachineController.StopButtonAction;
+
 /**
  * View for Slot Machine
  *
@@ -30,41 +32,40 @@ import javax.swing.SwingConstants;
 public class SlotMachineView extends JLayeredPane implements ActionListener {
 	public SlotSkin skin;
 	public CustomButton playButton;
-	private ArrayList<JButton> stopButtons;
+	public ArrayList<JButton> stopButtons;
+	public ArrayList<Wheel> wheels;
 	private JLabel tokens;
-	private int[] symbols;
 	public JMenuItem jmi;
 	public JPanel menu;
-	private boolean showSymbols, winning;
+	public boolean showSymbols, winning;
 	private JFrame slotMachineWindow;
 	private ImageOverlay imageOverlay;
 	private ImageOverlayThread imageOverlayThread;
-	private SlotMachineView thisView;
 	
+	/**
+	 * Constructor
+	 */
 	public SlotMachineView() {
 		// Will init with init event
-		thisView = this;
 		stopButtons = new ArrayList<JButton>();
 	}
-
+	
+	/**
+	 * Draw background
+	 */
 	public void paintComponent(Graphics g) {	
 		// Draw background
 		g.drawImage(skin.getImage("background"), 0, 0, skin.getInt("width"), skin.getInt("height"), null);
-		
-		// Draw symbols
-		if(showSymbols) {
-			for(int i = 0; i < symbols.length; i++){
-				g.drawImage(skin.getImage("symbol"+symbols[i]), skin.getInt("wheel"+(i+1)+"X"), skin.getInt("wheel"+(i+1)+"Y"), skin.getInt("symbolWidth"), skin.getInt("symbolHeight"), null);
-			}
-		}
 	}
-
+	
+	/**
+	 * Perform action from listener
+	 */
 	@Override
 	public void actionPerformed(ActionEvent e) {
 		if (e.getActionCommand().equals("init")) {
 			// Reset symbols
-			symbols = new int[0];
-			showSymbols = true;
+			showSymbols = false;
 			
 			// Set layout of this JPanel
 			this.setLayout(null);
@@ -92,8 +93,17 @@ public class SlotMachineView extends JLayeredPane implements ActionListener {
 			playButton.addMouseListener(playButton);
 			this.add(playButton);
 			
-			// Setup thread stopping buttons
+			// Setup wheel animations
+			wheels = new ArrayList<Wheel>();
 			for(int i = 0; i < skin.getInt("numWheels"); i++) {
+				// Setup wheels
+				Wheel thisWheel = new Wheel();
+				thisWheel.setLocation(new Point(skin.getInt("wheel"+(i+1)+"X"), skin.getInt("wheel"+(i+1)+"Y")));
+				thisWheel.setSize(new Dimension(skin.getInt("symbolWidth"), skin.getInt("symbolHeight")));
+				this.add(thisWheel);
+				wheels.add(thisWheel);
+				
+				// Setup thread stopping buttons
 				JButton thisJButton = new JButton("STOP");
 				thisJButton.setLocation(new Point(skin.getInt("wheel"+(i+1)+"X") + skin.getInt("stopOffsetX"), skin.getInt("wheel"+(i+1)+"Y") + skin.getInt("stopOffsetY")));
 				thisJButton.setSize(new Dimension(skin.getInt("stopWidth"), skin.getInt("stopHeight")));
@@ -108,7 +118,6 @@ public class SlotMachineView extends JLayeredPane implements ActionListener {
 			this.add(imageOverlay, 2, 0);
 			imageOverlayThread = new ImageOverlayThread();
 			
-			
 			// Setup window
 			slotMachineWindow = new JFrame("Slot Machine");
 			slotMachineWindow.setSize(skin.getInt("width"), skin.getInt("height") + 40); // +40 is to offset menu bar
@@ -119,13 +128,24 @@ public class SlotMachineView extends JLayeredPane implements ActionListener {
 			slotMachineWindow.setVisible(true);
 		}else if (e.getActionCommand().equals("loadSkin")) {
 			// Reset everything
+			SlotMachineView thisView = this;
 			tokens.setLocation(new Point(skin.getInt("labelX"), skin.getInt("labelY")));
 			playButton.updateSkin(skin.getImage("play"), skin.getImage("playPressed"));
 			playButton.setLocation(new Point(skin.getInt("playX"), skin.getInt("playY")));
-			SlotMachineView thisView = this;
+			for(Wheel w : wheels) {
+				thisView.remove(w);
+			}
+			wheels.clear();
+			for(int i = 0; i < skin.getInt("numWheels"); i++) {
+				// Setup wheels
+				Wheel thisWheel = new Wheel();
+				thisWheel.setLocation(new Point(skin.getInt("wheel"+(i+1)+"X"), skin.getInt("wheel"+(i+1)+"Y")));
+				thisWheel.setSize(new Dimension(skin.getInt("symbolWidth"), skin.getInt("symbolHeight")));
+				this.add(thisWheel);
+				wheels.add(thisWheel);
+			}
 			for(JButton thisButton : stopButtons) {
 				thisView.remove(thisButton);
-				//stopButtons.remove(thisButton);
 			}
 			stopButtons.clear();
 			for(int i = 0; i < skin.getInt("numWheels"); i++) {
@@ -150,16 +170,6 @@ public class SlotMachineView extends JLayeredPane implements ActionListener {
 		} else if (e.getActionCommand().equals("update")) {
 			// Get model
 			SlotMachineModel model = (SlotMachineModel) e.getSource();
-			symbols = model.getSymbols();
-			
-			// Print results to console
-			String nums = new String();
-			for(int i : model.getSymbols()) {
-				nums += i;
-			}
-//			// Debug
-//			System.out.println(nums);
-//			System.out.println(model.getTokens() + " // " + model.getWinnings());
 			
 			// Update winnings label
 			winning = false;
@@ -169,17 +179,29 @@ public class SlotMachineView extends JLayeredPane implements ActionListener {
 			}
 			
 			// Update tokens label
-			if(model.isGameOver()){
-				tokens.setText("GAME OVER");
-				symbols = new int[0]; // Don't draw symbols
-			} else if(model.getTokens() > 0) {
+			if(model.getTokens() >= 0) {
 				tokens.setText("Tokens: " + model.getTokens());
 			}
 			
+			// Show symbols if it was disabled
 			if(!showSymbols) {
 				showSymbols = true;
-				symbols = new int[0]; // Don't draw symbols
-				return;
+			}
+		} else if (e.getActionCommand().equals("gameOver")) {
+			// Update tokens label with game over message
+			tokens.setText("GAME OVER");
+			showSymbols = false;
+			updateSymbols();
+			return;
+		} else if (e.getActionCommand().equals("results")) {
+			// Get model
+			SlotMachineModel model = (SlotMachineModel) e.getSource();
+			
+			// Update winnings label
+			winning = false;
+			if(model.getWinnings() > 0){
+				tokens.setText("Winnings: " + model.getWinnings());
+				winning = true;
 			}
 			
 			// Show overlay
@@ -188,6 +210,16 @@ public class SlotMachineView extends JLayeredPane implements ActionListener {
 		
 		// Repaint
 		this.repaint();
+	}
+	
+	/**
+	 * Update symbols on all wheels
+	 */
+	private void updateSymbols() {
+		for(Wheel w : wheels) {
+			w.revalidate();
+			w.repaint();
+		}
 	}
 	
 	/**
@@ -200,6 +232,11 @@ public class SlotMachineView extends JLayeredPane implements ActionListener {
 		private Image normal;
 		private Image pressed;
 		
+		/**
+		 * Constructor
+		 * @param normal The image to show when the button is displayed
+		 * @param pressed The image to show when the button is pressed
+		 */
 		CustomButton(Image normal, Image pressed) {
 			this.listeners = new ArrayList<ActionListener>();
 			this.normal = normal;
@@ -208,13 +245,21 @@ public class SlotMachineView extends JLayeredPane implements ActionListener {
 			this.setSize( new Dimension( normal.getWidth(null), normal.getHeight(null) ) );
 		}
 		
+		/**
+		 * Update images to match new skin
+		 * @param normal The new image to show when the button is displayed
+		 * @param pressed The new image to show when the button is pressed
+		 */
 		public void updateSkin(Image normal, Image pressed) {
 			this.normal = normal;
 			this.pressed = pressed;
 			isPressed = false;
 			this.setSize( new Dimension( normal.getWidth(null), normal.getHeight(null) ) );
 		}
-
+		
+		/**
+		 * Paint the image of the button
+		 */
 		@Override
 		public void paintComponent(Graphics g) {
 			if(isPressed) {
@@ -223,49 +268,110 @@ public class SlotMachineView extends JLayeredPane implements ActionListener {
 				g.drawImage(normal, 0, 0, null);
 			}
 		}
-
-		@Override
-		public void mouseClicked(MouseEvent arg0) { }
-
-		@Override
-		public void mouseEntered(MouseEvent arg0) { }
-
-		@Override
-		public void mouseExited(MouseEvent arg0) { }
-
+		
+		// Unused mouse implementations
+		@Override public void mouseClicked(MouseEvent arg0) { }
+		@Override public void mouseEntered(MouseEvent arg0) { }
+		@Override public void mouseExited(MouseEvent arg0) { }
+		
+		/**
+		 * Action to take when mouse is pressed
+		 */
 		@Override
 		public void mousePressed(MouseEvent arg0) {
+			// Draw pressed image
 			isPressed = true;
 			this.repaint();
 		}
-
+		
+		/**
+		 * Action to take when mouse is released
+		 */
 		@Override
 		public void mouseReleased(MouseEvent arg0) {
+			// Draw normal image
 			isPressed = false;
 			this.repaint();
 			
+			// Send click action to listeners
 			ActionEvent event = new ActionEvent(this, 0, "click");
 		    for (ActionListener l : listeners) { l.actionPerformed(event); }
 		}
 		
+		/**
+		 * Add ActionListener
+		 * @param a The ActionListener to add
+		 */
 		public void addActionListener(ActionListener a) {
 			listeners.add(a);
 		}
 	}
+	
+	/**
+	 * Wheel for Slot Machine
+	 *
+	 */
+	public class Wheel extends JComponent {
+		private int currentSymbol;
+		
+		/**
+		 * Constructor
+		 */
+		public Wheel() {
+			this.setSymbol(0);
+		}
+		
+		/**
+		 * Draw symbol for this wheel
+		 */
+		@Override
+		public void paintComponent(Graphics g) {
+			if(showSymbols) {
+				g.drawImage(skin.getImage("symbol"+currentSymbol), 0, 0, skin.getInt("symbolWidth"), skin.getInt("symbolHeight"), null);
+			}
+		}
+		
+		/**
+		 * Get index of the current symbol
+		 * @return The index of the current symbol
+		 */
+		public int getSymbol() {
+			return currentSymbol;
+		}
+		
+		/**
+		 * Set the current symbol for this wheel
+		 * @param currentSymbol The index of the symbol to draw
+		 */
+		public void setSymbol(int currentSymbol) {
+			this.currentSymbol = currentSymbol;
+			this.revalidate();
+			this.repaint();
+		}
+	}
+		
 	/**
 	 * Image Overlay
 	 *
 	 */
-	class ImageOverlay extends JComponent {
+	private class ImageOverlay extends JComponent {
 		public boolean show;
 		private Image win, loss;
 		
+		/**
+		 * Constructor
+		 * @param win The image to show when the player wins
+		 * @param loss The image to show when the player losses
+		 */
 		public ImageOverlay(Image win, Image loss) {
 			this.win = win;
 			this.loss = loss;
 			this.show = false;
 		}
 		
+		/**
+		 * Show overlay and draw win or loss image
+		 */
 		@Override
 		public void paintComponent(Graphics g) {
 			if(show) {
@@ -284,7 +390,10 @@ public class SlotMachineView extends JLayeredPane implements ActionListener {
 	 * Image Overlay Thread
 	 *
 	 */
-	class ImageOverlayThread extends Thread {
+	private class ImageOverlayThread extends Thread {
+		/**
+		 * Show overlay, wait, then hide overlay
+		 */
 		@Override
 		public void run() {
 			try {
